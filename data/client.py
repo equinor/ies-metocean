@@ -5,7 +5,7 @@ import numpy as np
 
 import asyncio
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientResponseError
 
 
 def chunks(lst, n):
@@ -56,41 +56,58 @@ class Client:
         else:
             raise ValueError("You must supply either wind or solar as an argument")
 
-    def get_era_5_urls(self, arg):
-        keys_str = "&keys=".join(self.keys)
+    def get_urls(self, arg):
+        keys_str = '&keys='.join(self.keys)
         urls = []
         self.coordinates = self.check_square(arg)
 
         for input_coordinate in self.coordinates:
-            url = (f'https://api.gateway.equinor.com/metocean/era/5/data?from={self.from_date}&'
+            url = (f'https://api.gateway.equinor.com/metocean/{arg.hindcast}/data?from={self.from_date}&'
                    f'to={self.to_date}&longitude={input_coordinate[1]}&latitude={input_coordinate[0]}&keys={keys_str}')
             urls.append(url)
             print(url)
         return urls
 
-    async def http_get_with_aiohttp(self, session, url: str,
-                                    timeout: int = 10) -> (int, Dict[str, Any], bytes):
+    async def http_get_with_aiohttp(self, session, url, timeout=10):
+        try:
+            async with session.get(url=url, headers=self.headers, timeout=timeout, raise_for_status=True) as resp:
+                response = None
+                if resp.status != 200:
+                    response = {"error": f"server returned {resp.status}"}
+                else:
+                    response = await resp.json()
 
-        async with session.get(url=url, headers=self.headers, timeout=timeout) as resp:
-            json_resp = await resp.json()
-            return json_resp
+        except ClientResponseError as e:
+            if e.status == 429:
+                print(e)
+                print(response)
+        except Exception as ex:
+            print(ex)
+        except asyncio.TimeoutError:
+            response = {"results": f"timeout error on {url}"}
 
-    async def get_climate_data(self, arg, interval=10):
+        return response
+
+    async def get_climate_data(self, arg, interval=15):
         async with ClientSession() as session:
-            lists = chunks(self.get_era_5_urls(arg), 5)
+            urls = self.get_urls(arg)
+            counter = len(urls)
+            lists = chunks(urls, 5)
             results = []
             for li in lists:
+                counter = counter - len(li)
                 results.append(await asyncio.gather(
-                    *[self.http_get_with_aiohttp(session, url, 20000) for url in li]))
+                    *[self.http_get_with_aiohttp(session=session, url=url, timeout=10000) for url in li]))
                 await asyncio.sleep(interval)
+                print('\rremaining requests: ' + str(counter) + '/' + str(len(urls)), end='')
+            print('\nall requests have been completed')
             return np.concatenate(results)
 
     def check_square(self, arg):
         if arg.square:
             if len(self.coordinates) != 4:
-                raise ValueError("square option requires four coordinates")
+                raise ValueError('square option requires four coordinates')
             else:
                 return square(self.coordinates)
         else:
             return self.coordinates
-

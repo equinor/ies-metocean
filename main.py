@@ -14,17 +14,16 @@ def setup_parser():
                            help='wind or solar',
                            required=True)
 
+    my_parser.add_argument('--hindcast',
+                           '-hc',
+                           action='store',
+                           help='era/5 or nora/10',
+                           required=True)
+
     my_parser.add_argument('--config',
                            '-c',
                            action='store',
                            help='path to config file',
-                           required=True)
-
-    my_parser.add_argument('--mode',
-                           '-m',
-                           action='store',
-                           help='avg: average all coordinate value. ind: get all values from each coordinate, square: '
-                                'get all rounded coordinates within one area defined by four edge coordinates',
                            required=True)
 
     my_parser.add_argument('--square',
@@ -51,6 +50,6 @@ async def main():
     if args.type == "solar":
         datastore.calculate_dhi()
         datastore.calculate_ghi()
-    datastore.create_datasets(args, "test.h5")
+    datastore.create_datasets("test.h5")
 
 asyncio.run(main())
