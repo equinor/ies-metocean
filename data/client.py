@@ -72,6 +72,14 @@ class Client:
         return urls
 
     async def http_get_with_aiohttp(self, session, url, timeout=10):
+        """
+        It makes an HTTP GET request to the URL provided, and returns the response as a JSON object
+        :param session: the aiohttp session object
+        :param url: the url to make the request to
+        :param timeout: The number of seconds to wait for the server to send data before giving up, as a float, or a
+        (connect timeout, read timeout) tuple, defaults to 10 (optional)
+        :return: A dictionary with the key "results" and the value of the url.
+        """
         try:
             async with session.get(url=url, headers=self.headers, timeout=timeout, raise_for_status=True) as resp:
                 response = None
@@ -92,6 +100,14 @@ class Client:
         return response
 
     async def get_climate_data(self, arg, interval=15):
+        """
+        It takes a list of urls, splits them into chunks of 5, and then makes a request to each url in each chunk, waiting
+        15 seconds between each chunk
+
+        :param arg: the argument for the get_urls function
+        :param interval: the interval between each request, defaults to 15 (optional)
+        :return: A list of results
+        """
         async with ClientSession() as session:
             urls = self.get_urls(arg)
             counter = len(urls)
@@ -107,6 +123,13 @@ class Client:
             return np.concatenate(results)
 
     def check_square(self, arg):
+        """
+        If the square option is selected, check that the number of coordinates is 4, and if so, return all coordinates
+        within the other coordinates (rounded to whole number).
+
+        :param arg: the argument object
+        :return: The coordinates of the rectangle.
+        """
         if arg.square:
             if len(self.coordinates) != 4:
                 raise ValueError('square option requires four coordinates')

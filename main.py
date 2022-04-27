@@ -7,6 +7,7 @@ from data.climatedatastore import ClimateDatastore
 
 
 def setup_parser():
+    """Sets up the argument parser and adds arguments."""
     my_parser = argparse.ArgumentParser(description="Retrieve ERA5/Nora10 data for wind or solar")
     my_parser.add_argument('--type',
                            '-t',
