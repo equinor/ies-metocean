@@ -15,6 +15,7 @@ def chunks(lst, n):
 
 
 def square(poly):
+    """Retrieves all coordinates (rounded to whole numbers) between four coordinate-pairs."""
     rounded = []
     for latlong in poly:
         rounded.append([round(num) for num in latlong])
@@ -34,6 +35,7 @@ def square(poly):
 
 
 class Client:
+    """Class containing logic to perform requests to the metocean API.  """
     keys: []
     coordinates: []
     from_date: str
@@ -57,6 +59,7 @@ class Client:
             raise ValueError("You must supply either wind or solar as an argument")
 
     def get_urls(self, arg):
+        """Gets all urls from the classes keys field and formats them for the url. Returns a list of formatted URLs."""
         keys_str = '&keys='.join(self.keys)
         urls = []
         self.coordinates = self.check_square(arg)
